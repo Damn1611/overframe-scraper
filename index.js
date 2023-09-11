@@ -121,6 +121,8 @@ async function fetchWarframeMarketPrices(item) {
     console.log('------------------------------------------');
     console.log(`Total mod price: ${modTotal} platinum`);
     console.log(`Total arcane price: ${arcaneTotal} platinum`);
+    console.log('------------------------------------------');
+    console.log(`Total price: ${modTotal + arcaneTotal} platinum`);
   } catch (error) {
     console.error('An error occurred:', error);
   }
