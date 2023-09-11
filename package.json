@@ -1,0 +1,15 @@
+{
+  "name": "overframe-scraper",
+  "version": "1.0.0",
+  "description": "scrapes overframe builds and checks the wf.market price",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "damn1611",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.5.0",
+    "puppeteer": "^21.1.1"
+  }
+}
