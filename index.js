@@ -70,59 +70,81 @@ async function fetchWarframeMarketPrices(item) {
 
     // Navigate to the specified URL
     await page.goto(url, { waitUntil: 'domcontentloaded' });
-
-    // Wait for the selectors to load
-    await Promise.all([
-      page.waitForSelector('.ArcaneMod_name__QFfJZ'),
-      page.waitForSelector('.Mod_name__cGR4B')
-    ]);
-
-    // Extract text from all matching elements of the selectors
-    const [arcaneModElements, modElements] = await Promise.all([
-      page.$$('.ArcaneMod_name__QFfJZ'),
-      page.$$('.Mod_name__cGR4B')
-    ]);
-
-    const arcanes = await Promise.all(arcaneModElements.map(async (element) => {
-      return (await element.getProperty('textContent')).jsonValue();
-    }));
-
-    const mods = await Promise.all(modElements.map(async (element) => {
-      return (await element.getProperty('textContent')).jsonValue();
-    }));
-
-    // Close the browser and readline interface
-    await browser.close();
-    rl.close();
+    console.log('------------------------------------------');
+    // Wait for the page to load
+    await page.waitForSelector('.Mod_name__cGR4B', { timeout: 3000 });
+    try {
+      await page.waitForSelector('.ArcaneMod_name__QFfJZ', { timeout: 3000 });
+    } catch (error) {
+      console.log('No arcanes found');
+      console.log('------------------------------------------');
+    }
 
     // Initialize counters for mods and arcanes
     let modTotal = 0;
     let arcaneTotal = 0;
 
-    // Fetch prices for each mod and arcane concurrently
-    const fetchPromises = [...mods, ...arcanes].map(async (item) => {
-      try {
-        const order = await fetchWarframeMarketPrices(item);
-        console.log(`${item}   price: ${order[0]} platinum`);
-        // Update the respective total based on the item type
-        if (mods.includes(item)) {
-          modTotal += order[0];
-        } else {
-          arcaneTotal += order[0];
-        }
-        return order[0];
-      } catch (error) {
-        console.log(`${item} is untradeable`);
-        return 0;
-      }
-    });
+    // Extract text from matching elements of the selectors if they exist
+    const arcaneModElements = await page.$$('.ArcaneMod_name__QFfJZ');
+    const modElements = await page.$$('.Mod_name__cGR4B');
 
-    const prices = await Promise.all(fetchPromises);
+    if (arcaneModElements.length > 0) {
+      const arcanes = await Promise.all(arcaneModElements.map(async (element) => {
+        return (await element.getProperty('textContent')).jsonValue();
+      }));
+      
+      // Fetch prices for each arcane concurrently
+      const fetchArcanePromises = arcanes.map(async (item) => {
+        try {
+          const order = await fetchWarframeMarketPrices(item);
+          console.log(`${item}   price: ${order[0]} platinum`);
+          arcaneTotal += order[0];
+          return order[0];
+        } catch (error) {
+          console.log(`${item} is untradeable`);
+          return 0;
+        }
+      });
+
+      await Promise.all(fetchArcanePromises);
+      console.log('------------------------------------------');
+    }
+
+    if (modElements.length > 0) {
+      const mods = await Promise.all(modElements.map(async (element) => {
+        return (await element.getProperty('textContent')).jsonValue();
+      }));
+
+      // Fetch prices for each mod concurrently
+      const fetchModPromises = mods.map(async (item) => {
+        try {
+          const order = await fetchWarframeMarketPrices(item);
+          console.log(`${item}   price: ${order[0]} platinum`);
+          modTotal += order[0];
+          return order[0];
+        } catch (error) {
+          console.log(`${item} is untradeable`);
+          return 0;
+        }
+      });
+
+      await Promise.all(fetchModPromises);
+    }
+
+    // Close the browser and readline interface
+    await browser.close();
+    rl.close();
+    if( arcaneTotal > 0) {
     console.log('------------------------------------------');
-    console.log(`Total mod price: ${modTotal} platinum`);
     console.log(`Total arcane price: ${arcaneTotal} platinum`);
+    console.log(`Total mod price: ${modTotal} platinum`);
     console.log('------------------------------------------');
     console.log(`Total price: ${modTotal + arcaneTotal} platinum`);
+    } else {
+    console.log('------------------------------------------');
+    console.log(`Total price: ${modTotal} platinum`);
+    console.log('------------------------------------------');
+    }
   } catch (error) {
     console.error('An error occurred:', error);
   }
